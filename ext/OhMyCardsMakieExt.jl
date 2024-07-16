@@ -22,7 +22,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
     return "/" * joinpath(relpath(page.workdir, doc.user.build), filename)
 end
 
-function OhMyCards.set_cover_to_png!(meta, page, doc, fig::Makie.FigureLike)
+function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
     # convert figure to image
     original_cover_image = Makie.colorbuffer(meta[:Cover])
     ratio = 600 / size(original_cover_image, 1) # get 300px height
