@@ -21,7 +21,7 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
         Documenter.create_draft_result!(node; blocktype="@example")
         return
     end
-    gallery_dict = doc.plugins[findfirst(x -> x isa ExampleConfig, doc.plugins)].gallery_dict
+    gallery_dict = Documenter.getplugin(doc, ExampleConfig).gallery_dict
 
     not_found = String[]
     entries = String[]

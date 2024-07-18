@@ -35,7 +35,7 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     page_name = first(splitext(last(splitdir(page.source))))
     page_link_path = first(splitext(relpath(page.build, doc.user.build)))
     @info "Running Cardmeta for $page_name"
-    gallery_dict = doc.plugins[findfirst(x -> x isa ExampleConfig, doc.plugins)].gallery_dict
+    gallery_dict = Documenter.getplugin(doc, ExampleConfig).gallery_dict
 
     meta = get!(gallery_dict, page_name, Dict{Symbol, Any}())
     meta[:Path] = page_link_path
