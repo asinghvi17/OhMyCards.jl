@@ -6,6 +6,7 @@ What does this do?
 - Moves Cardmeta blocks
 - Adds a quick example block (in Vitepress syntax) if requested in the pipeline and a cardmeta block is found
 - Adds badges to the page if necessary
+- Adds the page to `expandfirst` if it is not already there
 
 This is run at priority 1.2, meaning after `doctest` and before `expand_templates`.
 """
@@ -29,6 +30,11 @@ function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.
             # do nothing for now - potentially inject an extra cardmeta block at the end
             # of every page.
             MarkdownAST.insert_after!(last(page.mdast.children), MarkdownAST.@ast MarkdownAST.CodeBlock("@cardmeta", ""))
+        end
+    end
+    if is_examples_page
+        if !(filename in doc.user.expandfirst)
+            push!(doc.user.expandfirst, filename)
         end
     end
 end
