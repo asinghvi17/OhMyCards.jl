@@ -19,7 +19,7 @@ function _is_cardmeta_block(x)
 end
 
 function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.Document)
-    # Main.@infiltrate
+    # Iterate over all pages in the document, and check which ones have a cardmeta.
     for (filename, page) in doc.blueprint.pages
         cardmeta_blocks = filter(_is_cardmeta_block, collect(page.mdast.children))
         is_examples_page = Base.occursin("examples", splitdir(page.build)[1]) || !isempty(cardmeta_blocks)
@@ -31,10 +31,10 @@ function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.
             # of every page.
             MarkdownAST.insert_after!(last(page.mdast.children), MarkdownAST.@ast MarkdownAST.CodeBlock("@cardmeta", ""))
         end
-    end
-    if is_examples_page
-        if !(filename in doc.user.expandfirst)
-            push!(doc.user.expandfirst, filename)
+        if is_examples_page
+            if !(filename in doc.user.expandfirst)
+                push!(doc.user.expandfirst, filename)
+            end
         end
     end
 end
