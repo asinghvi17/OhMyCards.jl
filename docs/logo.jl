@@ -1,19 +1,37 @@
+#=
+```@cardmeta
+Title = "OhMyCards logo"
+Description = "Making a logo with Makie.jl"
+Cover = "fig"
+```
+In this demo, we will create the logo for this package (OhMyCards.jl) with Makie!  
+The initial idea for the logo was to have a card with some picture or plot in the 
+background, and indistinct title text in the foreground.
+=#
+
+# ## Setup
+# First, we import all the packages we will need to draw the logo.
+# We will be drawing the logo with the [Makie.jl](https://github.com/MakieOrg/Makie.jl) package,
+# and using Colors.jl to get the Julia colors.  Rendering is done
+# to a vector graphics format so we use CairoMakie as the backend.
 using Makie, CairoMakie
 using Colors
 using MakieTeX
 
 import Colors: JULIA_LOGO_COLORS
-
-# First, make the outer rectangle
-
+JULIA_LOGO_COLORS
+# We want to create a rectangle with the right aspect ratio, this should do.
 bounding_rectangle = Rect2f(0, 0, 15, 10)
-
+# Then, we create a geometry which is that rectangle, but with its corners rounded.
 frame = Makie.roundedrectvertices(bounding_rectangle, 2, 50)
+## This function returns an unclosed vector of points (points[begin] != points[end]), 
+## so we need to close it.
 push!(frame, frame[begin])
-
 lines(frame; color = 1:length(frame))
 
-
+# ## Plotting
+# Now, we can start with the plotting!
+# First
 fig = Figure(; figure_padding = 0)
 ax = Axis(fig[1, 1])
 frameplot = poly!(ax, frame; color = :transparent, strokecolor = JULIA_LOGO_COLORS.purple, strokewidth = 2)
