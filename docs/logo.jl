@@ -2,7 +2,7 @@
 ```@cardmeta
 Title = "OhMyCards logo"
 Description = "Making a logo with Makie.jl"
-Cover = "fig"
+Cover = fig
 ```
 In this demo, we will create the logo for this package (OhMyCards.jl) with Makie!  
 The initial idea for the logo was to have a card with some picture or plot in the 
@@ -49,6 +49,7 @@ import GeometryOps as GO, GeoInterface as GI
 points = Vector{Point2f}(undef, 500)
 magnitudes = rand(10..100, length(points))
 
+# Sample points from polygon
 i = 1
 frame_poly = GI.Polygon([GI.LineString(frame)])
 while i ≤ length(points)
@@ -62,10 +63,10 @@ end
 scatter!(ax, points; color = rand(length(points)), markersize = magnitudes, colormap = :diverging_bwr_40_95_c42_n256, alpha = 0.1)
 
 fig
+#
 hidedecorations!(ax)
 hidespines!(ax)
 tightlimits!(ax)
-autolimits!(ax)
 
 titleplot[1][] = "🄾🅷 🄼🆈 🅲🅰🆁🅳🆂"
 titleplot[1][] = "Ⓞⓗ Ⓜⓨ ⓒⓐⓡⓓⓢ"
@@ -73,6 +74,7 @@ titleplot[1][] = "□□ □□ □□□□□"
 ax.scene.plots[end].alpha[] = 0.2
 translate!(titleplot, 0, 0, 1)
 fig
+#
 ax.backgroundcolor = :transparent
 fig.scene.backgroundcolor[] = RGBAf(1,1,1,0)
 fig
