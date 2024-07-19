@@ -4,6 +4,7 @@ import OhMyCards
 
 using Colors: Colorant
 using FileIO: save
+import FileIO
 using ImageIO
 using ImageTransformations
 
