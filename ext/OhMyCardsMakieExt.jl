@@ -5,7 +5,7 @@ import ImageTransformations
 import Makie: FileIO, ImageIO
 
 import OhMyCards
-import OhMyCards: get_image_url, set_cover_to_png!
+import OhMyCards: get_image_url, set_cover_to_image!
 
 
 function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
