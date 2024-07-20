@@ -7,7 +7,7 @@ DocMeta.setdocmeta!(OhMyCards, :DocTestSetup, :(using OhMyCards); recursive=true
 
 # Markdownify the Literate logo example
 
-# Literate.markdown(joinpath(@__DIR__, "logo.jl"), joinpath(@__DIR__, "src"); documenter = true)
+Literate.markdown(joinpath(@__DIR__, "logo.jl"), joinpath(@__DIR__, "src"); documenter = true)
 
 # cp(joinpath(dirname(pathof(OhMyCards)), "gallery_style.css"), joinpath(@__DIR__, "src", "gallery_style.css"))
 
