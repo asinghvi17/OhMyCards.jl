@@ -128,10 +128,10 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
         # recall that `idx` is the index of the first header element.
         if !isnothing(idx)
             # insert the cover image into the page
-            MarkdownAST.insert_after!(elements[idx], MarkdownAST.@ast Documenter.RawNode(:html, "<img src=\"$(get_image_url(page, doc, meta[:Cover]))\"/>"))
+            MarkdownAST.insert_after!(elements[idx], MarkdownAST.@ast Documenter.RawNode(:html, "<img src=\"$(Base.invokelatest(get_image_url, page, doc, meta[:Cover]))\"/>"))
         end
         # downsample the cover image for the card
-        set_cover_to_image!(meta, page, doc)
+        Base.invokelatest(set_cover_to_image!, meta, page, doc)
     end
  
 
