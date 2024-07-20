@@ -152,3 +152,6 @@ end
 
 set_cover_to_image!(meta, page, doc, cover::String) = cover
 
+# Implement the cover interface for images (`AbstractMatrix{<: Colors.Colorant}`)
+
+

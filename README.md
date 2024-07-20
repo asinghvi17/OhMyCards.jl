@@ -10,9 +10,13 @@ The package is integrated with Makie but can also be used standalone, with Strin
 
 ## Usage
 
-See the GeoMakie docs for usage examples, the idea is that you put a cardmeta block in each example file (it's automagically moved to the end) and put an overviewgallery block in your gallery page if you want one.
+See the GeoMakie docs for usage examples, the idea is that you put a `@cardmeta` block in each example file (it's automagically moved to the end) and put an `@overviewgallery` block in your gallery page (if you want one), listing each filename.  This does mean that filenames must be unique, though that may change in future versions.
 
 You also have to pass the `ExampleFormat` plugin to your `makedocs` function to use these blocks.  This can be a no-arg constructor if you just want defaults.
+
+## Quick start
+
+Add a `@cardmeta` block as described in the docs.
 
 ## How it works
 
