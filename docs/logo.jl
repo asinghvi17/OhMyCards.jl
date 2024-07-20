@@ -44,25 +44,22 @@ titleplot.fontsize = 55
 titleplot.position = (1.5, 1.5)
 fig
 
+
+# Now, we sample points within the frame polygon, to get a cool background.
 import GeometryOps as GO, GeoInterface as GI
-
-points = Vector{Point2f}(undef, 500)
-magnitudes = rand(10..100, length(points))
-
-# Sample points from polygon
-i = 1
 frame_poly = GI.Polygon([GI.LineString(frame)])
-while i ≤ length(points)
+points = map(1:500) do _
     point = Point2f(rand(0..15), rand(0..10))
     if GO.contains(frame_poly, point)
-        points[i] = point
-        i += 1
+        return point
     end
 end
+magnitudes = rand(10..100, length(points))
 
-scatter!(ax, points; color = rand(length(points)), markersize = magnitudes, colormap = :diverging_bwr_40_95_c42_n256, alpha = 0.1)
+# scatter!(ax, points; color = rand(length(points)), markersize = magnitudes, colormap = :diverging_bwr_40_95_c42_n256, alpha = 0.1)
 
 fig
+
 #
 hidedecorations!(ax)
 hidespines!(ax)
