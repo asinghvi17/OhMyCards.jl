@@ -21,7 +21,8 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
         Documenter.create_draft_result!(node; blocktype="@example")
         return
     end
-    gallery_dict = Documenter.getplugin(doc, ExampleConfig).gallery_dict
+    settings = Documenter.getplugin(doc, ExampleConfig)
+    gallery_dict = settings.gallery_dict
 
     not_found = String[]
     entries = String[]
@@ -66,6 +67,16 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
     $(join(entries, "\n"))
     </div>
     """
+    if settings.inject_scoped_css
+        # inject scoped CSS
+        scoped_css = "\n<style scoped>" * read(joinpath(@__DIR__, "gallery_style.css"), String) * "\n</style>"
+        indented_main_lines = split(main_str, "\n")
+        # for i in eachindex(indented_main_lines)
+        #     indented_main_lines[i] = "    " * indented_main_lines[i]
+        # end
+        insert!(indented_main_lines, length(indented_main_lines) - 1, scoped_css)
+        main_str = join(indented_main_lines, "\n")
+    end
     node.element = Documenter.RawNode(:html, main_str)
 
     if !isempty(not_found)
