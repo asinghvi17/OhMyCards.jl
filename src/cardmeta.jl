@@ -90,7 +90,7 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     # I f``
     idx = findfirst(x -> x.element isa Union{MarkdownAST.Heading, Documenter.AnchoredHeader}, elements)
     title = if isnothing(idx)
-        splitext(page)[1]
+        page_name
     else
         Documenter.MDFlatten.mdflatten(elements[idx])
     end
