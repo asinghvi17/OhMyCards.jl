@@ -29,6 +29,11 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
         return
     end
 
+    matched = match(r"^@cardmeta(?:\s+([^\s;]+))?\s*(;.*)?$", x.info)
+    matched === nothing && error("invalid '@cardmeta' syntax: $(x.info)")
+    name, kwargs = matched.captures
+
+
     # Literate.jl uses the page filename as an "environment name" for the example block,
     # so we need to extract that from the page.  The code in the meta block has
     # to be evaluated in the same module in order to have access to local variables.
@@ -40,7 +45,9 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     meta = get!(gallery_dict, page_name, Dict{Symbol, Any}())
     meta[:Path] = page_link_path
     # The sandboxed module -- either a new one or a cached one from this page.
-    current_mod = Documenter.get_sandbox_module!(page.globals.meta, "atexample", page_name)
+    # If a name is provided, as in `@cardmeta myenv`, use that, otherwise use the page name, 
+    # which is the default for e.g. Literate.jl and friends.
+    current_mod = Documenter.get_sandbox_module!(page.globals.meta, "atexample", isnothing(name) ? page_name : name)
 
     x = node.element
     lines = Documenter.find_block_in_file(x.code, page.source)
