@@ -39,6 +39,20 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
         src     = get(element, :Cover, "data:image/svg+xml;charset=utf-8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"/>")
         caption = get(element, :Title, "")
         desc    = get(element, :Description, "")
+        # potentially edit the cover image path
+        if isfile(src)
+            html_format = if doc.user.format isa Documenter.HTML 
+                doc.user.format
+            elseif any(x -> x isa Documenter.HTML, doc.user.format)
+                findfirst(x -> x isa Documenter.HTML, doc.user.format)
+            else
+                nothing
+            end
+            if html_format.prettyurls
+                dir, file = splitdir(src)
+                src = joinpath(dir, "..", file)
+            end
+        end
         # now, create the necessary HTML for this:
         push!(entries, """
         <div class="grid-item">
