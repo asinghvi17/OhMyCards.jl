@@ -23,7 +23,7 @@ OhMyCardsMakieExt = "Makie"
 OhMyCardsPlotsExt = "Plots"
 
 [compat] 
-Colors = "0.10, 0.11, 0.12"
+Colors = "0.10, 0.11, 0.12, 0.13"
 Documenter = "1"
 FileIO = "1.16"
 ImageIO = "0.6"
