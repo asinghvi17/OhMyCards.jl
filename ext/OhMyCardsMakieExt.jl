@@ -9,7 +9,12 @@ import OhMyCards: get_image_url, set_cover_to_image!
 
 
 function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
-    image = Makie.colorbuffer(fig)
+    try
+        image = Makie.colorbuffer(fig)
+    catch e
+        @error "Error while saving Makie figure in the card!" page=page.source 
+        rethrow(e)
+    end
     iob = IOBuffer()
     ImageIO.save(FileIO.Stream{FileIO.format"PNG"}(iob), image)
     # We could include this inline, but that seems to be causing issues.
@@ -24,7 +29,13 @@ end
 
 function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
     # convert figure to image
-    original_cover_image = Makie.colorbuffer(meta[:Cover])
+    original_cover_image = try
+        Makie.colorbuffer(meta[:Cover])
+    catch e
+        @error "Error while saving Makie figure in the card!" page=page.source 
+        rethrow(e)
+    end
+    
     ratio = 600 / size(original_cover_image, 1) # get 300px height
     resized_cover_image = ImageTransformations.imresize(original_cover_image; ratio)
     
