@@ -54,7 +54,7 @@ function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
     has_prettyurls = if isnothing(html_idx)
         false
     else
-        doc.user.format[htmlidx].prettyurls
+        doc.user.format[html_idx].prettyurls
     end
 
     meta[:Cover] = if has_prettyurls
