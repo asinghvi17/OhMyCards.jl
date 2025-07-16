@@ -58,7 +58,7 @@ function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
     end
 
     meta[:Cover] = if has_prettyurls
-        normpath(joinpath(relpath(page.workdir, doc.user.build), page. filename))
+        normpath(joinpath(relpath(page.workdir, doc.user.build), splitext(last(splitpath(page.source)))[1], filename))
     else
         normpath(joinpath(relpath(page.workdir, doc.user.build), filename))
     end
