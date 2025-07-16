@@ -1,5 +1,5 @@
-
-function _stitch_all_example_blocks(page)
+# Stitch all example blocks in a page together.
+function _stitch_all_example_blocks(page #= ::Documenter.Page =#)
     # Extract all example blocks (this is naturally in order)
     all_example_blocks_in_order = filter(page.mdast.children) do x
         x.element isa MarkdownAST.CodeBlock && Base.occursin("@example", x.element.info)
