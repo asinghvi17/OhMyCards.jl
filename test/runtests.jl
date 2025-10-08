@@ -10,4 +10,6 @@ using Test
     include("test_processor.jl")
     include("test_end_to_end.jl")
     include("test_colors_ext.jl")
+    include("test_plots_ext.jl")
+    include("test_makie_ext.jl")
 end
