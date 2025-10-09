@@ -75,35 +75,34 @@ and images are in the same directory.
 - `filename`: Name of the image file
 
 # Returns
-- String: Normalized relative path suitable for HTML embedding
+- String: Normalized relative path suitable for HTML embedding (relative to the HTML file location)
 
 # Examples
 ```julia
 # With prettyurls=false:
 # page.source = "examples/plot.md" -> "examples/plot.html"
-# Result: "examples/cover_abc123.png"
+# Image written to: "examples/cover_abc123.png"
+# Result: "./cover_abc123.png" (relative to the HTML file)
 
 # With prettyurls=true:
 # page.source = "examples/plot.md" -> "examples/plot/index.html"
-# Result: "examples/plot/cover_abc123.png"
+# Image written to: "examples/cover_abc123.png"
+# Result: "../cover_abc123.png" (relative to the HTML file, up one directory)
 ```
 """
 function generate_relative_path(page, doc::Documenter.Document, filename::String)
-    # Get the base relative path from page.workdir to doc.user.build
-    base_path = relpath(page.workdir, doc.user.build)
-    
     if has_prettyurls(doc)
         # With prettyurls, pages are organized as page-name/index.html
-        # So we need to include the page name (without extension) in the path
-        page_name = splitext(last(splitpath(page.source)))[1]
-        full_path = joinpath(base_path, page_name, filename)
+        # The image is written to page.workdir (e.g., build/examples/)
+        # The HTML file is at page-name/index.html (e.g., build/examples/plot/index.html)
+        # So we need to go up one directory: ../filename
+        return joinpath("..", filename)
     else
-        # Without prettyurls, pages are page-name.html in the same directory
-        full_path = joinpath(base_path, filename)
+        # Without prettyurls, pages are page-name.html in the same directory as the image
+        # Both the HTML file and image are in page.workdir
+        # So we just need the filename with ./ prefix for clarity
+        return joinpath(".", filename)
     end
-    
-    # Normalize the path for consistent cross-platform behavior
-    return normpath(full_path)
 end
 
 """

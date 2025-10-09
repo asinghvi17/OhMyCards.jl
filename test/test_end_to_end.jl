@@ -93,8 +93,8 @@ end
 
             result_pretty = process_cover_image(page_pretty, doc_pretty, mock_image, CoverImageConfig())
 
-            # With prettyurls, the path should include the page name
-            @test occursin("example", result_pretty.relative_url)
+            # With prettyurls, the path should be relative (../) since HTML is in example/index.html
+            @test startswith(result_pretty.relative_url, "..")
             @test isfile(result_pretty.file_path)
 
             # Test with prettyurls=false

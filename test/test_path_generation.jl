@@ -84,8 +84,8 @@ using Documenter
             @test occursin(filename, path_pretty)
             @test !occursin("//", path_pretty)
             
-            # With prettyurls, the path should include the page name
-            @test occursin("page", path_pretty)
+            # With prettyurls, the path should be relative (../) since HTML is in page/index.html
+            @test startswith(path_pretty, "..")
         end
     end
     
@@ -166,7 +166,7 @@ using Documenter
             fs_path3, rel_url3 = OhMyCards.generate_and_write_image(page_pretty, doc_pretty, content_bytes, "png")
             
             @test isfile(fs_path3)
-            @test occursin("test", rel_url3)  # page name included with prettyurls
+            @test startswith(rel_url3, "..")  # With prettyurls, path is relative (../)
         end
     end
     

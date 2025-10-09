@@ -80,7 +80,7 @@ why is .x# Implementation Plan
   - Write tests in `./test/test_makie_ext.jl` to ensure Makie extension works with new system
   - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2_
 
-- [ ] 10. Integrate new MIME-based system into cardmeta processing
+- [x] 10. Integrate new MIME-based system into cardmeta processing
   - Update `./src/cardmeta.jl` to use MIME-based `convert_to_format` and `embeddable_html` functions
   - Modify cover detection logic to work with new MIME dispatch system
   - Update HTML injection to use `embeddable_html` with detected MIME types
