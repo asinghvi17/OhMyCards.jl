@@ -16,10 +16,10 @@ background, and indistinct title text in the foreground.
 # to a vector graphics format so we use CairoMakie as the backend.
 using Makie, CairoMakie
 using Colors
-using MakieTeX
+# using MakieTeX
 
-import Colors: JULIA_LOGO_COLORS
-JULIA_LOGO_COLORS
+using Colors: JULIA_LOGO_COLORS
+
 # We want to create a rectangle with the right aspect ratio, this should do.
 bounding_rectangle = Rect2f(0, 0, 15, 10)
 # Then, we create a geometry which is that rectangle, but with its corners rounded.
