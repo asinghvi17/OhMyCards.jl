@@ -264,8 +264,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
         
         result = process_cover_image(page, doc, fig, config)
         
-        # Return URL with leading slash for backward compatibility
-        return "/" * result.relative_url
+        return result.relative_url
     catch e
         @error "Error while processing Makie figure" page=page.source exception=e
         # Fallback: create a red error pixel
@@ -276,7 +275,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
         filename = string(hash(bytes), base=62) * ".png"
         path = joinpath(page.workdir, filename)
         write(path, bytes)
-        return "/" * joinpath(relpath(page.workdir, doc.user.build), filename)
+        return joinpath(relpath(page.workdir, doc.user.build), filename)
     end
 end
 
@@ -299,8 +298,7 @@ function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
         
         result = process_cover_image(page, doc, fig, config)
         
-        # Set the cover in meta with leading slash for backward compatibility
-        meta[:Cover] = "/" * result.relative_url
+        meta[:Cover] = result.relative_url
     catch e
         @error "Error while processing Makie figure for cover" page=page.source exception=e
         rethrow(e)
