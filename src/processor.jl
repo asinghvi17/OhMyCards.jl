@@ -49,8 +49,8 @@ println(result.html_embed)     # "<img src=\"examples/abc123.png\" alt=\"\" />"
 - `ConversionError`: If conversion fails
 - `PathGenerationError`: If file writing fails
 """
-function process_cover_image(page, doc, content, config::CoverImageConfig;
-    extension::Union{String,Nothing}=nothing)
+function process_cover_image(page, doc, content, config::CoverImageConfig; 
+                             extension::Union{String,Nothing}=nothing)
     # Step 1: Determine the output format
     # Priority: explicit extension > config.preferred_format > fallback
     if !isnothing(extension)
@@ -66,28 +66,28 @@ function process_cover_image(page, doc, content, config::CoverImageConfig;
         mime = detect_format_with_fallback("dummy.$(config.fallback_format)")
         ext = config.fallback_format
     end
-
+    
     # Step 2: Convert content to bytes
     # This will dispatch to the appropriate extension-specific converter
     content_bytes = convert_to_format(content, mime, config)
-
+    
     # Step 3: Generate filename and write file
     # This handles path generation based on Documenter config (prettyurls, etc.)
     filesystem_path, relative_url = generate_and_write_image(
-        page, doc, content_bytes, ext,
+        page, doc, content_bytes, ext, 
         prefix=config.filename_prefix
     )
-
+    
     # Step 4: Generate HTML embedding code
     html = embeddable_html(mime, relative_url, config)
-
+    
     # Step 5: Create and return result
-    metadata = Dict{Symbol,Any}(
+    metadata = Dict{Symbol, Any}(
         :source_type => typeof(content),
         :format => string(mime),
         :file_size => length(content_bytes)
     )
-
+    
     return CoverImageResult(
         filesystem_path,
         relative_url,
