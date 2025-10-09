@@ -12,4 +12,5 @@ using Test
     include("test_colors_ext.jl")
     include("test_plots_ext.jl")
     include("test_makie_ext.jl")
+    include("test_cardmeta_integration.jl")
 end

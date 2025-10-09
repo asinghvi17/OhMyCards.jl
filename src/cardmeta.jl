@@ -144,14 +144,77 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
 
 end
 
+# Default implementation for string covers (already a URL)
 get_image_url(page, doc, s::String) = s
+
+# Generic implementation using the new MIME-based system
+function get_image_url(page, doc, content)
+    # Get configuration from ExampleConfig if available
+    config = get_cover_image_config(doc)
+    
+    # Process the cover image using the new MIME-based system
+    try
+        result = process_cover_image(page, doc, content, config)
+        return result.relative_url
+    catch e
+        if e isa UnsupportedFormatError
+            @warn "Unsupported content type for cover image: $(typeof(content)). Skipping cover generation."
+            return nothing
+        else
+            rethrow(e)
+        end
+    end
+end
 
 function set_cover_to_image!(meta, page, doc)
     return set_cover_to_image!(meta, page, doc, meta[:Cover])
 end
 
+# String covers are already URLs, no processing needed
 set_cover_to_image!(meta, page, doc, cover::String) = cover
 
-# Implement the cover interface for images (`AbstractMatrix{<: Colors.Colorant}`)
+# Generic implementation using the new MIME-based system
+function set_cover_to_image!(meta, page, doc, content)
+    # Get configuration from ExampleConfig if available
+    config = get_cover_image_config(doc)
+    
+    # Process the cover image using the new MIME-based system
+    try
+        result = process_cover_image(page, doc, content, config)
+        
+        # Store the relative URL in the meta dictionary for the card
+        meta[:Cover] = result.relative_url
+        
+        return result.relative_url
+    catch e
+        if e isa UnsupportedFormatError
+            @warn "Unsupported content type for cover image: $(typeof(content)). Skipping cover generation."
+            meta[:Cover] = nothing
+            return nothing
+        else
+            rethrow(e)
+        end
+    end
+end
+
+"""
+    get_cover_image_config(doc) -> CoverImageConfig
+
+Get the CoverImageConfig from the document's ExampleConfig, or return default configuration.
+
+This function checks if the ExampleConfig plugin has a cover_image_config field,
+and returns it if available. Otherwise, it returns a default CoverImageConfig.
+"""
+function get_cover_image_config(doc)
+    example_config = Documenter.getplugin(doc, ExampleConfig)
+    
+    # Check if the ExampleConfig has a cover_image_config field
+    if hasfield(typeof(example_config), :cover_image_config)
+        return example_config.cover_image_config
+    else
+        # Return default configuration
+        return CoverImageConfig()
+    end
+end
 
 
