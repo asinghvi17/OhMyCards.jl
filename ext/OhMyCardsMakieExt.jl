@@ -30,6 +30,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
 end
 
 function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
+    plugin = Documenter.getplugin(doc, ExampleConfig)
     # convert figure to image
     original_cover_image = try
         Makie.colorbuffer(meta[:Cover])
@@ -61,6 +62,10 @@ function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
         normpath(joinpath(relpath(page.workdir, doc.user.build), splitext(last(splitpath(page.source)))[1], filename))
     else
         normpath(joinpath(relpath(page.workdir, doc.user.build), filename))
+    end
+    
+    if plugin.dot_slash
+        meta[:Cover] = joinpath(".", meta[:Cover])
     end
 end
 
