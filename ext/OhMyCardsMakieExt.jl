@@ -30,7 +30,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
 end
 
 function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
-    plugin = Documenter.getplugin(doc, ExampleConfig)
+    plugin = Documenter.getplugin(doc, OhMyCards.ExampleConfig)
     # convert figure to image
     original_cover_image = try
         Makie.colorbuffer(meta[:Cover])
