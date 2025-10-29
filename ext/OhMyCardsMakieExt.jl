@@ -24,9 +24,15 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
     # Instead, we will save to a file and include that.
     bytes = take!(iob)
     filename = string(hash(bytes), base = 62) * ".png"
-    path = joinpath(page.workdir, filename)
+    workdir_relpath = relpath(page.workdir, doc.user.build)
+    path = joinpath(doc.user.root, doc.user.build, workdir_relpath, filename)
     write(path, bytes)
-    return joinpath(relpath(page.workdir, doc.user.build), filename)
+    
+    if plugin.dot_slash
+        return joinpath(".", filename)
+    else
+        return filenames
+    end
 end
 
 function OhMyCards.set_cover_to_image!(meta, page, doc, fig::Makie.FigureLike)
