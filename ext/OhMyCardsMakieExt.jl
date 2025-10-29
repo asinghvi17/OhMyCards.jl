@@ -10,6 +10,8 @@ import OhMyCards: get_image_url, set_cover_to_image!
 
 
 function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
+    plugin = Documenter.getplugin(doc, OhMyCards.ExampleConfig)
+
     img = try
         Makie.colorbuffer(fig)
     catch e
@@ -27,7 +29,7 @@ function OhMyCards.get_image_url(page, doc, fig::Makie.FigureLike)
     workdir_relpath = relpath(page.workdir, doc.user.build)
     path = joinpath(doc.user.root, doc.user.build, workdir_relpath, filename)
     write(path, bytes)
-    
+
     if plugin.dot_slash
         return joinpath(".", filename)
     else
