@@ -21,33 +21,37 @@ doc = makedocs(;
     plugins = [OhMyCards.ExampleConfig(),],
 );
 
-    plots_doc = makedocs(;
-        debug = true,
-        sitename = "OhMyCards",
-        pages = [
-            "Home" => "index.md",
-            "Plots" => "plots.md",
-        ],
-        format = Documenter.HTML(;
-            canonical = "https://asinghvi17.github.io/OhMyCards.jl",
-            assets = String[],
-        ),
-        warnonly = true,
-        pagesonly = true,
-    )
+plots_doc = makedocs(;
+    debug = true,
+    root = @__DIR__,
+    source = "simpledoc",
+    sitename = "OhMyCards",
+    pages = [
+        "Home" => "index.md",
+        "Plots" => "plots.md",
+    ],
+    format = Documenter.HTML(;
+        canonical = "https://asinghvi17.github.io/OhMyCards.jl",
+        assets = String[],
+    ),
+    warnonly = true,
+    pagesonly = true,
+)
 
-    colors_doc = makedocs(;
-        debug = true,
-        sitename = "OhMyCards",
-        pages = [
-            "Home" => "index.md",
-            "Colors" => "colors.md",
-        ],
-        format = Documenter.HTML(;
-            canonical = "https://asinghvi17.github.io/OhMyCards.jl",
-            assets = String[],
-        ),
-        warnonly = true,
-        pagesonly = true,
-    )
+colors_doc = makedocs(;
+    debug = true,
+    root = @__DIR__,
+    source = "simpledoc",
+    sitename = "OhMyCards",
+    pages = [
+        "Home" => "index.md",
+        "Colors" => "colors.md",
+    ],
+    format = Documenter.HTML(;
+        canonical = "https://asinghvi17.github.io/OhMyCards.jl",
+        assets = String[],
+    ),
+    warnonly = true,
+    pagesonly = true,
+)
 # end
