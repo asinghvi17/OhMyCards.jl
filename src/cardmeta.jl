@@ -24,8 +24,8 @@ Documenter.Selectors.matcher(::Type{CardMetaBlocks}, node, page, doc) = Document
 function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     # Bail early if in draft mode
     if Documenter.is_draft(doc, page)
-        @debug "Skipping evaluation of @example block in draft mode:\n$(x.code)"
-        Documenter.create_draft_result!(node; blocktype="@example")
+        @debug "Skipping evaluation of cardmeta block in draft mode:\n$(x.code)"
+        Documenter.create_draft_result!(node; blocktype="cardmeta")
         return
     end
 
