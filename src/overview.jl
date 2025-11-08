@@ -36,7 +36,7 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
         element = gallery_dict[pagename]
         # obtain properties from the element, with defaults if not found from the cardmeta blocks
         href    = element[:Path] # this is must have!!!
-        src     = get(element, :Cover, "data:image/svg+xml;charset=utf-8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"/>")
+        src     = get(element, :Cover, "data:image/svg+xml;charset=base64,$(Base64.base64encode("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\" fill=\"white\"/></svg>"))")
         caption = get(element, :Title, "")
         desc    = get(element, :Description, "")
         # now, create the necessary HTML for this:
