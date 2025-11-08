@@ -16,7 +16,7 @@ background, and indistinct title text in the foreground.
 # to a vector graphics format so we use CairoMakie as the backend.
 using Makie, CairoMakie
 using Colors
-using MakieTeX
+# using MakieTeX
 
 import Colors: JULIA_LOGO_COLORS
 JULIA_LOGO_COLORS
