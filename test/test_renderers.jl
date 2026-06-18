@@ -21,3 +21,12 @@ using Test
     # Default renderer injects no scoped CSS:
     @test !occursin("<style scoped>", html)
 end
+
+@testset "DocumenterGallery scoped CSS" begin
+    cards = [Card("A", "desc", "a.svg", "examples/A/index", String[])]
+    el = emit_gallery(DocumenterGallery(; inject_scoped_css = true), cards, nothing, nothing)
+    html = el.text
+    @test occursin("<style scoped>", html)
+    @test occursin(".img-box", html)          # a selector from gallery_style.css
+    @test occursin("</style>", html)
+end
