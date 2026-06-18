@@ -11,7 +11,7 @@ Literate.markdown(joinpath(@__DIR__, "logo.jl"), joinpath(@__DIR__, "src"); docu
 
 # cp(joinpath(dirname(pathof(OhMyCards)), "gallery_style.css"), joinpath(@__DIR__, "src", "gallery_style.css"))
 
-plugins = [ExampleConfig(; inject_scoped_css = true)]
+plugins = [ExampleConfig(; renderer = DocumenterGallery(; inject_scoped_css = true))]
 
 makedocs(;
     modules=[OhMyCards],

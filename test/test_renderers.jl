@@ -30,3 +30,12 @@ end
     @test occursin(".img-box", html)          # a selector from gallery_style.css
     @test occursin("</style>", html)
 end
+
+@testset "ExampleConfig.renderer" begin
+    @test ExampleConfig().renderer isa DocumenterGallery
+    @test ExampleConfig().renderer.inject_scoped_css == false
+    cfg = ExampleConfig(; renderer = DocumenterGallery(; inject_scoped_css = true))
+    @test cfg.renderer.inject_scoped_css == true
+    # inject_scoped_css is no longer a field of ExampleConfig:
+    @test !(:inject_scoped_css in fieldnames(ExampleConfig))
+end
