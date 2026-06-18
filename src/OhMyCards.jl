@@ -13,5 +13,5 @@ include("overview.jl")
 
 export ExampleConfig
 export Feature, CopyPastableExample, Badge, JuliaFileBadge, DateBadge, AuthorBadge, LicenseBadge
-export GalleryRenderer, Card, emit_gallery, DocumenterGallery
+export GalleryRenderer, Card, emit_gallery, DocumenterGallery, VitepressGallery
 end

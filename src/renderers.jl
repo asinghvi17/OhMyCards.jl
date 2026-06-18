@@ -91,3 +91,83 @@ function emit_gallery(r::DocumenterGallery, cards::Vector{Card}, doc, page)
     end
     return Documenter.RawNode(:html, main_str)
 end
+
+"""
+    VitepressGallery(; search = true, tag_filter = true)
+
+Card grid where every card carries `data-title` / `data-description` / `data-tags`,
+plus an optional search `<input>` and clickable tag-filter chips. Filtering is plain
+client-side JS over the rendered cards (shipped inline as `<style>`/`<script>` via the
+same `RawNode(:html, …)` mechanism `DocumenterGallery` uses for scoped CSS). This works
+offline and complements Vitepress's built-in site search. Used by DyadDocs.
+"""
+Base.@kwdef struct VitepressGallery <: GalleryRenderer
+    search::Bool = true
+    tag_filter::Bool = true
+end
+
+function _vitepress_card_html(card::Card)
+    return """
+    <div class="grid-item" data-title="$(escapehtml(card.title))" data-description="$(escapehtml(card.description))" data-tags="$(escapehtml(join(card.tags, ",")))">
+        <div class="gallery-image">
+            <div class="img-box">
+                <a href="$(escapehtml(card.href))">
+                    <img src="$(card.cover)" height="150px" alt="$(escapehtml(card.title))"/>
+                    <div class="transparent-box1">
+                        <div class="caption">
+                            <h2>$(escapehtml(card.title))</h2>
+                        </div>
+                    </div>
+                    <div class="transparent-box2">
+                        <div class="subcaption">
+                            <p class="opacity-low">$(escapehtml(card.description))</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>"""
+end
+
+function emit_gallery(r::VitepressGallery, cards::Vector{Card}, doc, page)
+    entries = map(_vitepress_card_html, cards)
+
+    controls = IOBuffer()
+    if r.search || r.tag_filter
+        println(controls, "<div class=\"omc-gallery-controls\">")
+        if r.search
+            println(controls,
+                "<input class=\"omc-gallery-search\" type=\"search\" placeholder=\"Search examples…\" aria-label=\"Search examples\"/>")
+        end
+        if r.tag_filter
+            all_tags = sort(unique(reduce(vcat, [c.tags for c in cards]; init = String[])))
+            println(controls, "<div class=\"omc-gallery-tags\">")
+            for tag in all_tags
+                println(controls,
+                    "<button type=\"button\" class=\"omc-tag-chip\" data-tag=\"$(escapehtml(tag))\" aria-pressed=\"false\">$(escapehtml(tag))</button>")
+            end
+            println(controls, "</div>")
+        end
+        println(controls, "</div>")
+    end
+
+    css = read(joinpath(@__DIR__, "gallery_search.css"), String)
+    js = read(joinpath(@__DIR__, "gallery_search.js"), String)
+
+    main_str = """
+    <div class="omc-gallery-root">
+    <style scoped>
+    $(css)
+    </style>
+    $(String(take!(controls)))
+    <div class="grid-container">
+    $(join(entries, "\n"))
+    </div>
+    <div class="omc-gallery-empty">No examples match your filters.</div>
+    <script data-omc-gallery>
+    $(js)
+    </script>
+    </div>
+    """
+    return Documenter.RawNode(:html, main_str)
+end

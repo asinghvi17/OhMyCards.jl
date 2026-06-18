@@ -39,3 +39,38 @@ end
     # inject_scoped_css is no longer a field of ExampleConfig:
     @test !(:inject_scoped_css in fieldnames(ExampleConfig))
 end
+
+@testset "VitepressGallery" begin
+    using OhMyCards: VitepressGallery
+    cards = [
+        Card("Coffee Mug", "Espresso cooling", "assets/icon.svg",
+             "examples/CoffeeMugDemo/index", ["thermal", "beginner"]),
+        Card("Driveline", "Powertrain", "assets/dl.svg",
+             "examples/DrivelineDemo/index", ["mechanical", "thermal"]),
+    ]
+    el = emit_gallery(VitepressGallery(), cards, nothing, nothing)
+    @test el isa Documenter.RawNode
+    html = el.text
+    # cards carry filter metadata
+    @test occursin("data-tags=\"thermal,beginner\"", html)
+    @test occursin("data-title=", html)
+    @test occursin("data-description=", html)
+    # search input present
+    @test occursin("<input", html)
+    @test occursin("omc-gallery-search", html)
+    # tag chips: union of tags, deduped + sorted
+    @test occursin("data-tag=\"mechanical\"", html)
+    @test occursin("data-tag=\"thermal\"", html)
+    # client-side assets inlined
+    @test occursin("<style", html)
+    @test occursin("<script", html)
+
+    # search/tag_filter can be disabled
+    el2 = emit_gallery(VitepressGallery(; search = false, tag_filter = false), cards, nothing, nothing)
+    html2 = el2.text
+    @test !occursin("<input", html2)
+    @test !occursin("data-tag=\"thermal\"", html2)   # no chips
+    @test occursin("data-tags=", html2)              # cards still carry tags
+    @test occursin("<script", html2)   # client-side assets still inlined when controls disabled
+    @test occursin("<style", html2)
+end
