@@ -14,70 +14,35 @@ function Documenter.Selectors.runner(::Type{OverviewGalleryBlocks}, node, page, 
     x = node.element
     @assert Base.contains(x.info, "@overviewgallery")
     @assert !isempty(chomp(x.code)) "The `@overviewgallery` block must have at least one page name."
-    # Main.@infiltrate
-    # Bail early if in draft mode
+
     if Documenter.is_draft(doc, page)
-        @debug "Skipping evaluation of @example block in draft mode:\n$(x.code)"
-        Documenter.create_draft_result!(node; blocktype="@example")
+        @debug "Skipping evaluation of @overviewgallery block in draft mode:\n$(x.code)"
+        Documenter.create_draft_result!(node; blocktype = "@overviewgallery")
         return
     end
+
     settings = Documenter.getplugin(doc, ExampleConfig)
     gallery_dict = settings.gallery_dict
 
     not_found = String[]
-    entries = String[]
-    # find the blocks and use them as strings
-    for pagename in split(x.code, '\n')
+    cards = Card[]
+    for pagename in split(chomp(x.code), '\n')
+        pagename = strip(pagename)
+        isempty(pagename) && continue
         if !haskey(gallery_dict, pagename)
             push!(not_found, pagename)
             continue
         end
-        # obtain the element
         element = gallery_dict[pagename]
-        # obtain properties from the element, with defaults if not found from the cardmeta blocks
-        href    = element[:Path] # this is must have!!!
-        src     = get(element, :Cover, "data:image/svg+xml;charset=utf-8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"/>")
-        caption = get(element, :Title, "")
+        href    = element[:Path]                       # required (set by @cardmeta)
+        cover   = get(element, :Cover, _EMPTY_COVER)
+        title   = get(element, :Title, "")
         desc    = get(element, :Description, "")
-        # now, create the necessary HTML for this:
-        push!(entries, """
-        <div class="grid-item">
-            <div class="gallery-image">
-                <div class="img-box">
-                    <a href="$(escapehtml(href))">
-                        <img src="$(src)" height="150px" alt="$(escapehtml(href))"/>
-                        <div class="transparent-box1">
-                            <div class="caption">
-                                <h2>$(escapehtml(caption))</h2>
-                            </div>
-                        </div>
-                        <div class="transparent-box2">
-                            <div class="subcaption">
-                                <p class="opacity-low">$(escapehtml(desc))</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>""")
+        tags    = _normalize_tags(get(element, :Tags, String[]))
+        push!(cards, Card(string(title), string(desc), string(cover), string(href), tags))
     end
 
-    main_str = """
-    <div class="grid-container">
-    $(join(entries, "\n"))
-    </div>
-    """
-    if settings.inject_scoped_css
-        # inject scoped CSS
-        scoped_css = "\n<style scoped>" * read(joinpath(@__DIR__, "gallery_style.css"), String) * "\n</style>"
-        indented_main_lines = split(main_str, "\n")
-        # for i in eachindex(indented_main_lines)
-        #     indented_main_lines[i] = "    " * indented_main_lines[i]
-        # end
-        insert!(indented_main_lines, length(indented_main_lines) - 1, scoped_css)
-        main_str = join(indented_main_lines, "\n")
-    end
-    node.element = Documenter.RawNode(:html, main_str)
+    node.element = emit_gallery(settings.renderer, cards, doc, page)
 
     if !isempty(not_found)
         @warn "The following pages were not found in the gallery:\n$(join(not_found, "\n"))"

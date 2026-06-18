@@ -74,3 +74,13 @@ end
     @test occursin("<script", html2)   # client-side assets still inlined when controls disabled
     @test occursin("<style", html2)
 end
+
+@testset "_normalize_tags" begin
+    using OhMyCards: _normalize_tags
+    @test _normalize_tags("single") == ["single"]
+    @test _normalize_tags(nothing) == String[]
+    @test _normalize_tags(["a", "b"]) == ["a", "b"]
+    @test _normalize_tags((:a, :b)) == ["a", "b"]        # Tuple of Symbols
+    @test _normalize_tags([:a, :b]) == ["a", "b"]        # Vector of Symbols
+    @test eltype(_normalize_tags([:a, :b])) == String    # always String elements
+end

@@ -171,3 +171,8 @@ function emit_gallery(r::VitepressGallery, cards::Vector{Card}, doc, page)
     """
     return Documenter.RawNode(:html, main_str)
 end
+
+# Tags may arrive as Vector{String}, a Tuple, a single String, or Symbols.
+_normalize_tags(t::AbstractString) = [String(t)]
+_normalize_tags(t) = String[string(x) for x in t]
+_normalize_tags(::Nothing) = String[]

@@ -37,7 +37,12 @@ function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.
         # there is no cardmeta block.
         if has_cardmeta_blocks # some cardmeta block was detected
             # Move the cardmeta block from wherever it is to the end of the page.
-            MarkdownAST.insert_after!(last(page.mdast.children), first(cardmeta_blocks))
+            # Guard: if it is already the last child, insert_after! would call
+            # unlink! on the node-to-move and then re-insert it — corrupting the
+            # tree and silently removing the block.  Skip the move in that case.
+            if first(cardmeta_blocks) !== last(page.mdast.children)
+                MarkdownAST.insert_after!(last(page.mdast.children), first(cardmeta_blocks))
+            end
         elseif is_known_example_page # only inject cardmeta if in examples dir
             # Inject an empty cardmeta block at the end of the page
             MarkdownAST.insert_after!(last(page.mdast.children), MarkdownAST.@ast MarkdownAST.CodeBlock("@cardmeta", ""))
