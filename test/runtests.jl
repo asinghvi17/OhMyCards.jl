@@ -3,4 +3,5 @@ using Test
 
 @testset "OhMyCards.jl" begin
     # Write your tests here.
+    include("test_renderers.jl")
 end
