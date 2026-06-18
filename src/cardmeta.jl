@@ -32,17 +32,38 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     # Literate.jl uses the page filename as an "environment name" for the example block,
     # so we need to extract that from the page.  The code in the meta block has
     # to be evaluated in the same module in order to have access to local variables.
+    # `page_name` is still used to name the per-page sandbox module (stored in
+    # page.globals.meta, so it is fine that it is non-unique across pages).
     page_name = first(splitext(last(splitdir(page.source))))
     page_link_path = first(splitext(relpath(page.build, doc.user.build)))
     @info "Running Cardmeta for $page_name"
     gallery_dict = Documenter.getplugin(doc, ExampleConfig).gallery_dict
 
-    meta = get!(gallery_dict, page_name, Dict{Symbol, Any}())
-    meta[:Path] = page_link_path
     # The sandboxed module -- either a new one or a cached one from this page.
     current_mod = Documenter.get_sandbox_module!(page.globals.meta, "atexample", page_name)
 
     x = node.element
+
+    # Gallery key: an explicit `Name` in the block, else the page LINK PATH
+    # (unique). The old basename key collided across like-named pages — e.g.
+    # every `examples/<Demo>/index.md` keyed as "index".
+    gallery_key = page_link_path
+    for (ex, _str) in Documenter.parseblock(x.code, doc, page)
+        if Documenter.isassign(ex) && ex.args[1] === :Name
+            try
+                gallery_key = string(Core.eval(current_mod, ex.args[2]))
+            catch err
+                @warn "OhMyCards: failed to evaluate `Name` in @cardmeta" exception=err
+            end
+            break # first Name= wins
+        end
+    end
+
+    if haskey(gallery_dict, gallery_key)
+        @warn "OhMyCards: gallery key $(repr(gallery_key)) already used by another page; overwriting its metadata" page = page.source
+    end
+    meta = get!(gallery_dict, gallery_key, Dict{Symbol, Any}())
+    meta[:Path] = page_link_path
     lines = Documenter.find_block_in_file(x.code, page.source)
     @debug "Evaluating @cardmeta block:\n$(x.code)"
     # @infiltrate
@@ -52,7 +73,7 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
         # wants to hide. We should probably warn, but it is common enough that
         # we will silently skip for now.
         if Documenter.isassign(ex)
-            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags))
+            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags, :Name))
                 source = Documenter.locrepr(page.source, lines)
                 @warn(
                     "In $source: `@cardmeta` block has an unsupported " *
