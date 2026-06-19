@@ -61,9 +61,14 @@ end
     # tag chips: union of tags, deduped + sorted
     @test occursin("data-tag=\"mechanical\"", html)
     @test occursin("data-tag=\"thermal\"", html)
-    # client-side assets inlined
+    # scoped CSS is inlined (styles apply however inserted); the empty-state and
+    # gallery root wrapper are present for the head-loaded filter script to target
     @test occursin("<style", html)
-    @test occursin("<script", html)
+    @test occursin("omc-gallery-root", html)
+    @test occursin("omc-gallery-empty", html)
+    # the filtering JS is NOT inlined — Vitepress escapes/never runs body <script>s,
+    # so it is shipped via OhMyCardsDocumenterVitepressExt as a public/ + <head> asset
+    @test !occursin("<script", html)
 
     # search/tag_filter can be disabled
     el2 = emit_gallery(VitepressGallery(; search = false, tag_filter = false), cards, nothing, nothing)
@@ -71,8 +76,22 @@ end
     @test !occursin("<input", html2)
     @test !occursin("data-tag=\"thermal\"", html2)   # no chips
     @test occursin("data-tags=", html2)              # cards still carry tags
-    @test occursin("<script", html2)   # client-side assets still inlined when controls disabled
+    @test !occursin("<script", html2)                # JS never inlined
     @test occursin("<style", html2)
+end
+
+@testset "Vitepress JS delivery helpers" begin
+    using OhMyCards: _gallery_assets_dir, _inject_gallery_head_script, GALLERY_SCRIPT_NAME
+    # the shipped asset exists and is the file the head script references
+    @test isfile(joinpath(_gallery_assets_dir(), GALLERY_SCRIPT_NAME))
+    # config injection adds a base-aware <head> script entry, once, after `head: [`
+    cfg = "export default defineConfig({\n  head: [\n    ['link', {}],\n  ],\n})"
+    out = _inject_gallery_head_script(cfg)
+    @test occursin(GALLERY_SCRIPT_NAME, out)
+    @test occursin("baseTemp.base", out)
+    @test count(GALLERY_SCRIPT_NAME, out) == 1
+    # idempotent
+    @test _inject_gallery_head_script(out) == out
 end
 
 @testset "_normalize_tags" begin

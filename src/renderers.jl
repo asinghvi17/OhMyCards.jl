@@ -96,9 +96,14 @@ end
     VitepressGallery(; search = true, tag_filter = true)
 
 Card grid where every card carries `data-title` / `data-description` / `data-tags`,
-plus an optional search `<input>` and clickable tag-filter chips. Filtering is plain
-client-side JS over the rendered cards (shipped inline as `<style>`/`<script>` via the
-same `RawNode(:html, …)` mechanism `DocumenterGallery` uses for scoped CSS). This works
+plus an optional search `<input>` and clickable tag-filter chips. The scoped CSS is
+shipped inline via `RawNode(:html, …)` (style elements apply however they are
+inserted), but the filtering JS is **not** inlined: Vitepress renders markdown
+through Vue, which HTML-escapes and never executes a `<script>` embedded in page
+content. Instead the JS (`assets/gallery_search.js`) is delivered as a `public/`
+asset loaded by a `<head>` `<script src>` tag — see the package extension
+`OhMyCardsDocumenterVitepressExt`, which wires it via DocumenterVitepress's
+`vitepress_assets` / `vitepress_config_transform` plugin hooks. Filtering works
 offline and complements Vitepress's built-in site search. Used by DyadDocs.
 """
 Base.@kwdef struct VitepressGallery <: GalleryRenderer
@@ -152,8 +157,11 @@ function emit_gallery(r::VitepressGallery, cards::Vector{Card}, doc, page)
     end
 
     css = read(joinpath(@__DIR__, "gallery_search.css"), String)
-    js = read(joinpath(@__DIR__, "gallery_search.js"), String)
 
+    # NB: the filtering JS is intentionally NOT inlined here — Vitepress escapes
+    # and never runs `<script>` tags embedded in page content. It is shipped as a
+    # `public/` asset + `<head>` script via OhMyCardsDocumenterVitepressExt. The
+    # scoped `<style>` is safe to inline (styles apply however they're inserted).
     main_str = """
     <div class="omc-gallery-root">
     <style scoped>
@@ -164,9 +172,6 @@ function emit_gallery(r::VitepressGallery, cards::Vector{Card}, doc, page)
     $(join(entries, "\n"))
     </div>
     <div class="omc-gallery-empty">No examples match your filters.</div>
-    <script data-omc-gallery>
-    $(js)
-    </script>
     </div>
     """
     return Documenter.RawNode(:html, main_str)
@@ -176,3 +181,36 @@ end
 _normalize_tags(t::AbstractString) = [String(t)]
 _normalize_tags(t) = String[string(x) for x in t]
 _normalize_tags(::Nothing) = String[]
+
+# --- Vitepress JS delivery -------------------------------------------------
+# The VitepressGallery filtering JS cannot be inlined into page content (Vue
+# escapes and never executes body `<script>`s). It is shipped as a `public/`
+# asset and loaded via a `<head>` script. These helpers are consumed by the
+# package extension `OhMyCardsDocumenterVitepressExt`, which overloads
+# DocumenterVitepress's `vitepress_assets` / `vitepress_config_transform` hooks.
+
+"Filename of the gallery search script as served from the Vitepress site root."
+const GALLERY_SCRIPT_NAME = "omc_gallery_search.js"
+
+"""
+    _gallery_assets_dir() -> String
+
+Absolute path to the directory whose contents DocumenterVitepress copies into the
+Vitepress `public/` directory. It contains exactly the gallery client assets.
+"""
+_gallery_assets_dir() = abspath(joinpath(@__DIR__, "..", "assets"))
+
+"""
+    _inject_gallery_head_script(config::AbstractString) -> String
+
+Insert a base-aware `<head>` `<script src>` entry for the gallery search script
+into a Vitepress `config.mts` source string, mirroring the `siteinfo.js` entry
+DocumenterVitepress already emits. Idempotent: a second call is a no-op.
+"""
+function _inject_gallery_head_script(config::AbstractString)
+    occursin(GALLERY_SCRIPT_NAME, config) && return config
+    # `baseTemp.base` is in scope in the generated head array (the template uses
+    # it for siteinfo.js); reuse it so the asset URL respects a deployed base.
+    entry = "\n    ['script', { src: `\${baseTemp.base}$(GALLERY_SCRIPT_NAME)` }],"
+    return replace(config, r"head:\s*\[" => m -> m * entry; count = 1)
+end
