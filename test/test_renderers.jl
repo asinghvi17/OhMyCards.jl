@@ -61,13 +61,11 @@ end
     # tag chips: union of tags, deduped + sorted
     @test occursin("data-tag=\"mechanical\"", html)
     @test occursin("data-tag=\"thermal\"", html)
-    # scoped CSS is inlined (styles apply however inserted); the empty-state and
-    # gallery root wrapper are present for the head-loaded filter script to target
+    # scoped CSS inlined; root + empty-state present for the filter script to target
     @test occursin("<style", html)
     @test occursin("omc-gallery-root", html)
     @test occursin("omc-gallery-empty", html)
-    # the filtering JS is NOT inlined — Vitepress escapes/never runs body <script>s,
-    # so it is shipped via OhMyCardsDocumenterVitepressExt as a public/ + <head> asset
+    # filtering JS NOT inlined (Vitepress escapes/never runs body <script>s)
     @test !occursin("<script", html)
 
     # search/tag_filter can be disabled

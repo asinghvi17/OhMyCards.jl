@@ -1,18 +1,13 @@
 (function () {
   // Client-side search/tag filtering for OhMyCards VitepressGallery.
   //
-  // This file is shipped to the Vitepress site's `public/` directory and loaded
-  // via a `<head>` <script src> tag (see OhMyCardsDocumenterVitepressExt). It is
-  // NOT inlined into the page body: Vitepress renders markdown through Vue, and a
-  // <script> embedded in body content is (a) HTML-escaped, mangling JS operators,
-  // and (b) inserted via Vue's render, so it never executes. A head <script src>
-  // runs normally and persists across SPA navigation.
+  // Loaded as a `<head>` <script src> (see OhMyCardsDocumenterVitepressExt), NOT
+  // inlined: a body <script> is HTML-escaped by Vue and never executes; a head
+  // script runs normally and survives SPA navigation.
   //
-  // Because the gallery DOM is rendered/replaced by Vue (hydration, SPA route
-  // changes), we never capture node references: we DELEGATE events on `document`
-  // and re-query the live DOM on every apply, always acting on the nodes that are
-  // actually on the page. Active tag state lives in the chips' `aria-pressed`
-  // attribute (read live), not a closure Set.
+  // Vue re-renders/replaces the gallery DOM (hydration, SPA routes), so we never
+  // hold node references: delegate events on `document` and re-query the live DOM
+  // on every apply. Active tag state is read live from chips' `aria-pressed`.
   function norm(s) { return (s || "").toLowerCase(); }
 
   function applyGallery(root) {
@@ -46,8 +41,8 @@
     for (var i = 0; i < roots.length; i++) applyGallery(roots[i]);
   }
 
-  // Install the delegated listeners once per page session. Native `input`/`click`
-  // events bubble to `document`, so this survives the gallery DOM being swapped.
+  // Install delegated listeners once per page session; bubbling to `document`
+  // survives the gallery DOM being swapped.
   if (!window.__omcGalleryDelegated) {
     window.__omcGalleryDelegated = true;
 
@@ -67,15 +62,13 @@
       }
     });
 
-    // Re-apply on back/forward SPA navigation. (Forward nav into a gallery needs
-    // no apply: the freshly-rendered DOM defaults to all-visible with the empty
-    // state CSS-hidden, and the delegated listeners handle all interaction.)
+    // Re-apply on back/forward SPA nav (forward nav needs none: fresh DOM is
+    // all-visible and the delegated listeners handle interaction).
     window.addEventListener("popstate", applyAll);
   }
 
-  // Initial pass: the head script may run before the body/gallery exists and
-  // before Vue hydration, so re-run at each later readiness milestone too. All
-  // calls are idempotent.
+  // Head script may run before the gallery/Vue hydration exists, so re-run at
+  // each later readiness milestone too. All calls are idempotent.
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", applyAll);
   } else {

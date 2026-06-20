@@ -1,14 +1,9 @@
 """
     ExampleProcessing <: Documenter.Builder.DocumenterPipeline
 
-What does this do?
-
-- Moves Cardmeta blocks
-- Adds a quick example block (in Vitepress syntax) if requested in the pipeline and a cardmeta block is found
-- Adds badges to the page if necessary
-- Adds the page to `expandfirst` if it is not already there
-
-This is run at priority 1.2, meaning after `doctest` and before `expand_templates`.
+Per-page prep, run at priority 1.2 (after `doctest`, before `expand_templates`):
+moves cardmeta blocks to page end, generates one for example pages that lack it,
+and adds example pages to `expandfirst`.
 """
 abstract type ExampleProcessing <: Documenter.Builder.DocumentPipeline end
 
@@ -20,37 +15,25 @@ end
 
 function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.Document)
     settings = Documenter.getplugin(doc, ExampleConfig)
-    # Iterate over all pages in the document, and check which ones have a cardmeta.
     for (filename, page) in doc.blueprint.pages
-        # First, collect all cardmeta blocks on the page.  If this collection
-        # is empty, then we know no cardmeta blocks exist.
         cardmeta_blocks = filter(_is_cardmeta_block, collect(page.mdast.children))
-        # Now, check if the page is an example page.  The criteria here are:
-        # 1. Does the page have a cardmeta block
+        # A page is an example page if it has a cardmeta block or lives under examples/.
         has_cardmeta_blocks   = !isempty(cardmeta_blocks)
-        # 2. Is the page in the list of known example pages?
         is_known_example_page = Base.occursin("examples", splitdir(page.build)[1]) || page.build in settings.known_examples
-        # Either of these two conditions is sufficient for our purpose.
         is_example_page = is_known_example_page | has_cardmeta_blocks
-        is_example_page || continue # skip the next steps if this is not an example page
-        # Now, shift the cardmeta block, or generate it if the page is an example but 
-        # there is no cardmeta block.
-        if has_cardmeta_blocks # some cardmeta block was detected
-            # Move the cardmeta block from wherever it is to the end of the page.
-            # Guard: if it is already the last child, insert_after! would call
-            # unlink! on the node-to-move and then re-insert it — corrupting the
-            # tree and silently removing the block.  Skip the move in that case.
+        is_example_page || continue
+        if has_cardmeta_blocks
+            # Move the cardmeta block to page end. Guard: if it is already last,
+            # insert_after! would unlink! then re-insert it, corrupting the tree
+            # and silently dropping the block.
             if first(cardmeta_blocks) !== last(page.mdast.children)
                 MarkdownAST.insert_after!(last(page.mdast.children), first(cardmeta_blocks))
             end
-        elseif is_known_example_page # only inject cardmeta if in examples dir
-            # Inject an empty cardmeta block at the end of the page
+        elseif is_known_example_page # inject an empty cardmeta block at page end
             MarkdownAST.insert_after!(last(page.mdast.children), MarkdownAST.@ast MarkdownAST.CodeBlock("@cardmeta", ""))
         end
-        # Add the page to expandfirst if it is not already there.
-        # This ensures that the cardmeta blocks are all evaluated
-        # before we reach an overviewgallery block.
-        if is_example_page # this is technically redundant, but makes it explicitly clear
+        # expandfirst so cardmeta blocks are evaluated before any overviewgallery.
+        if is_example_page
             if !(filename in doc.user.expandfirst)
                 push!(doc.user.expandfirst, filename)
             end

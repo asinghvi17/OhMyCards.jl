@@ -53,8 +53,7 @@ using Test
         remotes = nothing,
     )
 
-    # Under Documenter.HTML() prettyurls, `index.md` is special-cased to emit
-    # `index.html` at the build root (other page names would emit `<name>/index.html`).
+    # prettyurls special-cases `index.md` to `index.html` at the build root.
     html = read(joinpath(builddir, "index.html"), String)
     @test occursin("omc-gallery-search", html)         # search input rendered
     @test occursin("data-tags=\"thermal,beginner\"", html)
