@@ -47,9 +47,14 @@ Base.@kwdef struct DocumenterGallery <: GalleryRenderer
     inject_scoped_css::Bool = false
 end
 
-function _documenter_card_html(card::Card)
+# Shared card markup. `data_attrs` adds the `data-title`/`-description`/`-tags`
+# hooks the VitepressGallery filter JS reads; DocumenterGallery omits them.
+function _card_html(card::Card; data_attrs::Bool = false)
+    attrs = data_attrs ?
+        " data-title=\"$(escapehtml(card.title))\" data-description=\"$(escapehtml(card.description))\" data-tags=\"$(escapehtml(join(card.tags, ",")))\"" :
+        ""
     return """
-    <div class="grid-item">
+    <div class="grid-item"$attrs>
         <div class="gallery-image">
             <div class="img-box">
                 <a href="$(escapehtml(card.href))">
@@ -71,7 +76,7 @@ function _documenter_card_html(card::Card)
 end
 
 function emit_gallery(r::DocumenterGallery, cards::Vector{Card}, doc, page)
-    entries = map(_documenter_card_html, cards)
+    entries = map(_card_html, cards)
     main_str = """
     <div class="grid-container">
     $(join(entries, "\n"))
@@ -103,31 +108,8 @@ Base.@kwdef struct VitepressGallery <: GalleryRenderer
     tag_filter::Bool = true
 end
 
-function _vitepress_card_html(card::Card)
-    return """
-    <div class="grid-item" data-title="$(escapehtml(card.title))" data-description="$(escapehtml(card.description))" data-tags="$(escapehtml(join(card.tags, ",")))">
-        <div class="gallery-image">
-            <div class="img-box">
-                <a href="$(escapehtml(card.href))">
-                    <img src="$(card.cover)" height="150px" alt="$(escapehtml(card.title))"/>
-                    <div class="transparent-box1">
-                        <div class="caption">
-                            <h2>$(escapehtml(card.title))</h2>
-                        </div>
-                    </div>
-                    <div class="transparent-box2">
-                        <div class="subcaption">
-                            <p class="opacity-low">$(escapehtml(card.description))</p>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>"""
-end
-
 function emit_gallery(r::VitepressGallery, cards::Vector{Card}, doc, page)
-    entries = map(_vitepress_card_html, cards)
+    entries = map(c -> _card_html(c; data_attrs = true), cards)
 
     controls = IOBuffer()
     if r.search || r.tag_filter
