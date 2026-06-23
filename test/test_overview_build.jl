@@ -62,6 +62,44 @@ using Test
     @test occursin("Beta", html)
 end
 
+@testset "@autooverviewgallery renders every card" begin
+    root = mktempdir()
+    src = joinpath(root, "src"); mkpath(joinpath(src, "examples", "A")); mkpath(joinpath(src, "examples", "B"))
+    write(joinpath(src, "examples", "A", "index.md"), """
+    # Alpha
+    ```@cardmeta
+    Title = "Alpha"
+    Tags = ["thermal"]
+    ```
+    """)
+    write(joinpath(src, "examples", "B", "index.md"), """
+    # Beta
+    ```@cardmeta
+    Title = "Beta"
+    Tags = ["mechanical"]
+    ```
+    """)
+    # No explicit list — the auto block lists every card itself.
+    write(joinpath(src, "examples", "index.md"), """
+    # Gallery
+
+    ```@autooverviewgallery
+    ```
+    """)
+    builddir = joinpath(root, "build")
+    makedocs(; sitename = "auto", root = root, build = builddir, format = Documenter.HTML(),
+             plugins = [ExampleConfig(; renderer = VitepressGallery())],
+             pages = ["examples/index.md", "examples/A/index.md", "examples/B/index.md"],
+             warnonly = true, remotes = nothing)
+    html = read(joinpath(builddir, "examples", "index.html"), String)
+    @test occursin("Alpha", html)            # both cards auto-listed
+    @test occursin("Beta", html)
+    @test occursin("data-tags=\"thermal\"", html)
+    @test occursin("data-tags=\"mechanical\"", html)
+    # The gallery index page is not itself a card (no injected @cardmeta, self-excluded).
+    @test !occursin("href=\"examples/index", html)
+end
+
 @testset "unique gallery keys for like-named pages" begin
     root = mktempdir()
     src = joinpath(root, "src"); mkpath(joinpath(src, "examples", "A")); mkpath(joinpath(src, "examples", "B"))
