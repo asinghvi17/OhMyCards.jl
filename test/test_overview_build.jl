@@ -100,6 +100,36 @@ end
     @test !occursin("href=\"examples/index", html)
 end
 
+@testset "pre-populated :Path survives @cardmeta (gallery href)" begin
+    # The DyadDocs build stage pre-populates a card with an href RELATIVE to the
+    # gallery page (e.g. "A/"); @cardmeta must not clobber it with the page link
+    # path ("examples/A/index"), which would double the `examples/` prefix.
+    gd = Dict{String,Any}("examples/A/index" => Dict{Symbol,Any}(:Path => "A/", :Title => "Alpha"))
+    cfg = ExampleConfig(; renderer = VitepressGallery(), gallery_dict = gd)
+
+    root = mktempdir(); src = joinpath(root, "src"); mkpath(joinpath(src, "examples", "A"))
+    write(joinpath(src, "examples", "A", "index.md"), """
+    # Alpha
+    ```@cardmeta
+    Title = "Alpha"
+    ```
+    """)
+    # The index page is NOT in expandfirst (it carries a gallery block), so it renders
+    # AFTER the demo page's @cardmeta — the exact ordering that exposed the clobber.
+    write(joinpath(src, "examples", "index.md"), """
+    # Gallery
+    ```@autooverviewgallery
+    ```
+    """)
+    builddir = joinpath(root, "build")
+    makedocs(; sitename = "p", root = root, build = builddir, format = Documenter.HTML(),
+             plugins = [cfg], pages = ["examples/index.md", "examples/A/index.md"],
+             warnonly = true, remotes = nothing)
+    html = read(joinpath(builddir, "examples", "index.html"), String)
+    @test occursin("href=\"A/\"", html)                  # pre-populated href wins
+    @test !occursin("href=\"examples/A/index", html)     # NOT clobbered by @cardmeta
+end
+
 @testset "unique gallery keys for like-named pages" begin
     root = mktempdir()
     src = joinpath(root, "src"); mkpath(joinpath(src, "examples", "A")); mkpath(joinpath(src, "examples", "B"))

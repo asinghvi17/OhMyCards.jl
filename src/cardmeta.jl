@@ -54,7 +54,9 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
         @warn "OhMyCards: gallery key $(repr(gallery_key)) already used by another page; overwriting its metadata" page = page.source
     end
     meta = get!(gallery_dict, gallery_key, Dict{Symbol, Any}())
-    meta[:Path] = page_link_path
+    # A pre-set `:Path` wins (e.g. a build step that pre-populated the card with an
+    # href relative to the gallery page); otherwise default to this page's link path.
+    get!(meta, :Path, page_link_path)
     lines = Documenter.find_block_in_file(x.code, page.source)
     @debug "Evaluating @cardmeta block:\n$(x.code)"
     # @infiltrate
