@@ -32,6 +32,15 @@ function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.
         is_known_example_page = Base.occursin("examples", splitdir(page.build)[1]) || page.build in settings.known_examples
         is_example_page = (is_known_example_page || has_cardmeta_blocks) && !has_gallery_block
         is_example_page || continue
+        # A build step may have already pre-populated this page's card (e.g. with a
+        # data-uri cover and an href-correct `:Path` that `@cardmeta` can't express).
+        # If so and the page has no `@cardmeta` of its own, leave it untouched:
+        # injecting an empty block would only re-run CardMetaBlocks and warn about the
+        # already-populated key. The gallery_dict entry is already complete.
+        page_key = first(splitext(relpath(page.build, doc.user.build)))
+        if !has_cardmeta_blocks && haskey(settings.gallery_dict, page_key)
+            continue
+        end
         if has_cardmeta_blocks
             # Move the cardmeta block to page end. Guard: if it is already last,
             # insert_after! would unlink! then re-insert it, corrupting the tree
