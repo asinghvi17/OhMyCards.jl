@@ -56,7 +56,14 @@ end
 # --- @autooverviewgallery ---------------------------------------------------
 # Renders EVERY card in the gallery, the way `@autodocs` renders every docstring
 # (vs `@docs`/`@overviewgallery`, which take an explicit list). The block body is
-# ignored; ordering is deterministic (sorted by gallery key).
+# ignored; ordering is deterministic — cards sort by their optional `@cardmeta`
+# `Order` (ranked cards lead in ascending order, unranked follow), then gallery key.
+
+# Sort key for a card's optional `@cardmeta` `Order`: ranked cards get `(0, order)`
+# so they lead in ascending order; unranked (missing / non-`Real`) get `(1, 0.0)` so
+# they follow. Ties within a group break on the gallery key at the call site.
+_order_rank(order::Real) = (0, float(order))
+_order_rank(::Any) = (1, 0.0)
 
 abstract type AutoOverviewGalleryBlocks <: Documenter.Expanders.ExpanderPipeline end
 
@@ -78,8 +85,11 @@ function Documenter.Selectors.runner(::Type{AutoOverviewGalleryBlocks}, node, pa
     gallery_dict = settings.gallery_dict
 
     # Exclude this page's own key — a gallery index page is not itself a card.
+    # Order by each card's `@cardmeta` `Order` (ranked ascending, then unranked),
+    # breaking ties on the gallery key.
     self_key = first(splitext(relpath(page.build, doc.user.build)))
-    keys = sort!(collect(k for k in Base.keys(gallery_dict) if k != self_key))
+    keys = collect(k for k in Base.keys(gallery_dict) if k != self_key)
+    sort!(keys; by = k -> (_order_rank(get(gallery_dict[k], :Order, nothing)), k))
     cards = Card[_card_from_entry(gallery_dict[k]) for k in keys]
 
     node.element = emit_gallery(settings.renderer, cards, doc, page)

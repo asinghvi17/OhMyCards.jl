@@ -64,7 +64,7 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     for (ex, str) in Documenter.parseblock(x.code, doc, page)
         # Non-assignments (comments, hidden code) are silently skipped for now.
         if Documenter.isassign(ex)
-            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags, :Name))
+            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags, :Name, :Order))
                 source = Documenter.locrepr(page.source, lines)
                 @warn(
                     "In $source: `@cardmeta` block has an unsupported " *
