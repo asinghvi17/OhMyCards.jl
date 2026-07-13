@@ -1,14 +1,8 @@
 #=
 # The `cardmeta` pipeline
 
-Cardmeta blocks add metadata to a demo file.  
-
-The pipeline has two parts:
-- The actual cardmeta block which moves things around
-- The initial transformer which moves all cardmeta blocks to the end of the page
-
-The reason we need to move the block to the end is so that it is evaluated
-after all other blocks in the page.
+Cardmeta blocks add metadata to a demo file. The block is moved to the page end
+so it evaluates after all other blocks (handled by the build-step transformer).
 =#
 
 using Documenter
@@ -24,35 +18,53 @@ Documenter.Selectors.matcher(::Type{CardMetaBlocks}, node, page, doc) = Document
 function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     # Bail early if in draft mode
     if Documenter.is_draft(doc, page)
-        @debug "Skipping evaluation of @example block in draft mode:\n$(x.code)"
+        @debug "Skipping evaluation of @cardmeta block in draft mode:\n$(node.element.code)"
         Documenter.create_draft_result!(node; blocktype="@example")
         return
     end
 
-    # Literate.jl uses the page filename as an "environment name" for the example block,
-    # so we need to extract that from the page.  The code in the meta block has
-    # to be evaluated in the same module in order to have access to local variables.
+    # `page_name` names the per-page sandbox module so the meta block evaluates in
+    # the same module as the example (sharing local variables); non-uniqueness
+    # across pages is fine since it is stored in page.globals.meta.
     page_name = first(splitext(last(splitdir(page.source))))
     page_link_path = first(splitext(relpath(page.build, doc.user.build)))
     @info "Running Cardmeta for $page_name"
     gallery_dict = Documenter.getplugin(doc, ExampleConfig).gallery_dict
 
-    meta = get!(gallery_dict, page_name, Dict{Symbol, Any}())
-    meta[:Path] = page_link_path
-    # The sandboxed module -- either a new one or a cached one from this page.
+    # Sandboxed module -- new or cached for this page.
     current_mod = Documenter.get_sandbox_module!(page.globals.meta, "atexample", page_name)
 
     x = node.element
+
+    # Gallery key: explicit `Name`, else the unique page LINK PATH. (A basename key
+    # collided across like-named pages, e.g. every `examples/<Demo>/index.md`.)
+    gallery_key = page_link_path
+    for (ex, _str) in Documenter.parseblock(x.code, doc, page)
+        if Documenter.isassign(ex) && ex.args[1] === :Name
+            try
+                gallery_key = string(Core.eval(current_mod, ex.args[2]))
+            catch err
+                @warn "OhMyCards: failed to evaluate `Name` in @cardmeta" exception=err
+            end
+            break # first Name= wins
+        end
+    end
+
+    if haskey(gallery_dict, gallery_key)
+        @warn "OhMyCards: gallery key $(repr(gallery_key)) already used by another page; overwriting its metadata" page = page.source
+    end
+    meta = get!(gallery_dict, gallery_key, Dict{Symbol, Any}())
+    # A pre-set `:Path` wins (e.g. a build step that pre-populated the card with an
+    # href relative to the gallery page); otherwise default to this page's link path.
+    get!(meta, :Path, page_link_path)
     lines = Documenter.find_block_in_file(x.code, page.source)
     @debug "Evaluating @cardmeta block:\n$(x.code)"
     # @infiltrate
 
     for (ex, str) in Documenter.parseblock(x.code, doc, page)
-        # If not `isassign`, this might be a comment, or any code that the user
-        # wants to hide. We should probably warn, but it is common enough that
-        # we will silently skip for now.
+        # Non-assignments (comments, hidden code) are silently skipped for now.
         if Documenter.isassign(ex)
-            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags))
+            if !(ex.args[1] in (:Title, :Description, :Cover, :Authors, :Date, :Tags, :Name, :Order))
                 source = Documenter.locrepr(page.source, lines)
                 @warn(
                     "In $source: `@cardmeta` block has an unsupported " *
@@ -81,13 +93,8 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     # Author: Default should be hardcoded to `["Anshul Singhvi"](https://github.com/asinghvi17)`
     # Date: nothing, don't include it if nothing
 
-    # Title
-    # If no name is given, find the first header in the page,
-    # and use that as the name.
+    # Title: default to the first header on the page.
     elements = collect(page.mdast.children)
-    # elements is a vector of Markdown.jl objects,
-    # you can get the MarkdownAST stuff via `page.mdast`.
-    # I f``
     idx = findfirst(x -> x.element isa Union{MarkdownAST.Heading, Documenter.AnchoredHeader}, elements)
     title = if isnothing(idx)
         page_name
@@ -96,7 +103,7 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     end
     get!(meta, :Title, title)
 
-    # Cover - check for e.g. `fig`, `f`, `figure`
+    # Cover - check for a figure bound to `fig`, `f`, or `figure`.
     if !haskey(meta, :Cover) # no default was assigned
         for potential_name in (:fig, :f, :figure)
             contents = nothing
@@ -110,14 +117,9 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
                     rethrow(e)
                 end
             end
-            # This used to be `if contents isa Makie.FigureLike`, but that's
-            # not generic.
-            # So we check if the function `set_cover_to_image!` is applicable 
-            # to the contents.  If it is, then we clearly have some dispatch
-            # defined, meaning that the contents can be made into an image.
-            # If it isn't applicable, then there is no dispatch (eg `DiffEqSolution`)
-            # so we can ignore it and assume there is no cover figure.
-            if applicable(set_cover_to_image!, meta, page, doc, contents) 
+            # Use it only if `set_cover_to_image!` has a dispatch for it (a generic
+            # alternative to `contents isa Makie.FigureLike`); else assume no cover.
+            if applicable(set_cover_to_image!, meta, page, doc, contents)
                 meta[:Cover] = contents
                 break
             end
@@ -125,9 +127,8 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     end
 
     if haskey(meta, :Cover)
-        # recall that `idx` is the index of the first header element.
+        # insert the cover image after the first header (idx)
         if !isnothing(idx)
-            # insert the cover image into the page
             MarkdownAST.insert_after!(elements[idx], MarkdownAST.@ast Documenter.RawNode(:html, "<img src=\"$(Base.invokelatest(get_image_url, page, doc, meta[:Cover]))\"/>"))
         end
         # downsample the cover image for the card
@@ -135,10 +136,8 @@ function Documenter.Selectors.runner(::Type{CardMetaBlocks}, node, page, doc)
     end
  
 
-    # Authors and Date are for the transformer and can be applied within this block, the first four 
-    # params need to go to the gallery/card object though.
-    # TODO: get the example config and see if Author or Date plugins are enabled, if so then
-    # add the blocks here...
+    # TODO: if the Author/Date plugins are enabled in the example config, add those
+    # blocks here (Authors/Date are for the transformer; the first four go to the card).
 
     node.element = Documenter.MetaNode(x, page.globals.meta)
 

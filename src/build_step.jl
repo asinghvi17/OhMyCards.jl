@@ -1,14 +1,9 @@
 """
     ExampleProcessing <: Documenter.Builder.DocumenterPipeline
 
-What does this do?
-
-- Moves Cardmeta blocks
-- Adds a quick example block (in Vitepress syntax) if requested in the pipeline and a cardmeta block is found
-- Adds badges to the page if necessary
-- Adds the page to `expandfirst` if it is not already there
-
-This is run at priority 1.2, meaning after `doctest` and before `expand_templates`.
+Per-page prep, run at priority 1.2 (after `doctest`, before `expand_templates`):
+moves cardmeta blocks to page end, generates one for example pages that lack it,
+and adds example pages to `expandfirst`.
 """
 abstract type ExampleProcessing <: Documenter.Builder.DocumentPipeline end
 
@@ -18,58 +13,48 @@ function _is_cardmeta_block(x)
     return x.element isa MarkdownAST.CodeBlock && Base.occursin("@cardmeta", x.element.info)
 end
 
+# A gallery index page (one carrying an `@overviewgallery`/`@autooverviewgallery`
+# block) is not itself a card — exclude it from card treatment so it neither gets
+# an injected `@cardmeta` nor lists itself in its own gallery.
+function _is_gallery_block(x)
+    return x.element isa MarkdownAST.CodeBlock && Base.occursin("overviewgallery", x.element.info)
+end
+
 function Documenter.Selectors.runner(::Type{ExampleProcessing}, doc::Documenter.Document)
     settings = Documenter.getplugin(doc, ExampleConfig)
-    # Iterate over all pages in the document, and check which ones have a cardmeta.
     for (filename, page) in doc.blueprint.pages
-        # First, collect all cardmeta blocks on the page.  If this collection
-        # is empty, then we know no cardmeta blocks exist.
-        cardmeta_blocks = filter(_is_cardmeta_block, collect(page.mdast.children))
-        # Now, check if the page is an example page.  The criteria here are:
-        # 1. Does the page have a cardmeta block
+        children = collect(page.mdast.children)
+        cardmeta_blocks = filter(_is_cardmeta_block, children)
+        # A page is an example page if it has a cardmeta block or lives under examples/,
+        # but never a gallery index page.
         has_cardmeta_blocks   = !isempty(cardmeta_blocks)
-        # 2. Is the page in the list of known example pages?
+        has_gallery_block     = any(_is_gallery_block, children)
         is_known_example_page = Base.occursin("examples", splitdir(page.build)[1]) || page.build in settings.known_examples
-        # Either of these two conditions is sufficient for our purpose.
-        is_example_page = is_known_example_page | has_cardmeta_blocks
-        is_example_page || continue # skip the next steps if this is not an example page
-        # Now, shift the cardmeta block, or generate it if the page is an example but 
-        # there is no cardmeta block.
-        if has_cardmeta_blocks # some cardmeta block was detected
-            # Move the cardmeta block from wherever it is to the end of the page.
-            MarkdownAST.insert_after!(last(page.mdast.children), first(cardmeta_blocks))
-        elseif is_known_example_page # only inject cardmeta if in examples dir
-            # Inject an empty cardmeta block at the end of the page
+        is_example_page = (is_known_example_page || has_cardmeta_blocks) && !has_gallery_block
+        is_example_page || continue
+        # A build step may have already pre-populated this page's card (e.g. with a
+        # data-uri cover and an href-correct `:Path` that `@cardmeta` can't express).
+        # If so and the page has no `@cardmeta` of its own, leave it untouched:
+        # injecting an empty block would only re-run CardMetaBlocks and warn about the
+        # already-populated key. The gallery_dict entry is already complete.
+        page_key = first(splitext(relpath(page.build, doc.user.build)))
+        if !has_cardmeta_blocks && haskey(settings.gallery_dict, page_key)
+            continue
+        end
+        if has_cardmeta_blocks
+            # Move the cardmeta block to page end. Guard: if it is already last,
+            # insert_after! would unlink! then re-insert it, corrupting the tree
+            # and silently dropping the block.
+            if first(cardmeta_blocks) !== last(page.mdast.children)
+                MarkdownAST.insert_after!(last(page.mdast.children), first(cardmeta_blocks))
+            end
+        elseif is_known_example_page # inject an empty cardmeta block at page end
             MarkdownAST.insert_after!(last(page.mdast.children), MarkdownAST.@ast MarkdownAST.CodeBlock("@cardmeta", ""))
         end
-        # Add the page to expandfirst if it is not already there.
-        # This ensures that the cardmeta blocks are all evaluated
-        # before we reach an overviewgallery block.
-        if is_example_page # this is technically redundant, but makes it explicitly clear
-            if !(filename in doc.user.expandfirst)
-                push!(doc.user.expandfirst, filename)
-            end
+        # expandfirst so cardmeta blocks are evaluated before any overviewgallery.
+        # (is_example_page is guaranteed true here — line above continues otherwise.)
+        if !(filename in doc.user.expandfirst)
+            push!(doc.user.expandfirst, filename)
         end
-        #=
-            # Now, we indulge in a bit of cheeky eval'ing.
-            # If there is no title, we can actually generate one if 
-            # the cardmeta block has a title key.
-            # This has to be done in the build step, since
-            # TrackHeaders is the first example block that is run (so that
-            # the table of references is populated for `@ref`) and so
-            # we need to make sure that the title is injected before
-            # TrackHeaders runs.
-            ex_strs = Documenter.parseblock(x.code, doc, page)
-            filter!(ex_strs) do (ex, str)
-                Documenter.isassign(ex) && 
-                ex.args[1] in (:Title, :title) &&
-                ex.args[2] isa String # interpolation makes this a QuoteNode
-            end
-            if !isempty(ex_strs)
-                _, title_str = first(ex_strs)
-                # inject the heading as the first element in the Markdown tree
-                MarkdownAST.insert_before!(first(page.mdast.children), @ast MarkdownAST.Heading(1) do; title_str; end)
-            end
-        =#
     end
 end
